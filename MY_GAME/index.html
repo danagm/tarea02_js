@@ -1,0 +1,188 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>programacion para internet </title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+    var config = {
+       type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: { y: 300 },
+                debug: false
+            }
+        },
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    var ghost;
+    var platforms;
+    var cursors;
+    var candies;
+    var score = 0;
+    var scoreText;
+
+    var holes;
+    var gameOver = false;
+
+    var game = new Phaser.Game(config);
+
+    function preload ()
+    {
+        this.load.image('background', 'assets/mountain3.png');
+        this.load.image('ground', 'assets/ground.png');
+        this.load.spritesheet('ghost', 'assets/ghost-Sheet.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.image('candy', 'assets/Candy-pink.png');
+        this.load.image('hole', 'assets/black_hole.png');
+    }
+
+    function create ()
+    {
+        this.add.image(350, 300, 'background');
+
+        platforms = this.physics.add.staticGroup();
+        
+		platforms.create(50, 250, 'ground').setScale(0.4).refreshBody();
+		platforms.create(250, 250, 'ground').setScale(0.4).refreshBody();
+		platforms.create(450, 250, 'ground').setScale(0.4).refreshBody();
+        platforms.create(600, 400, 'ground').setScale(0.4).refreshBody();
+        platforms.create(800, 400, 'ground').setScale(0.4).refreshBody();
+		platforms.create(700, 120, 'ground').setScale(0.4).refreshBody();
+        platforms.create(50, 568, 'ground').setScale(0.4).refreshBody();
+        platforms.create(250, 568, 'ground').setScale(0.4).refreshBody();
+        platforms.create(450, 568, 'ground').setScale(0.4).refreshBody();
+        platforms.create(650, 568, 'ground').setScale(0.4).refreshBody();
+        platforms.create(850, 568, 'ground').setScale(0.4).refreshBody();
+        
+        ghost = this.physics.add.sprite(100, 450, 'ghost');
+		ghost.setCollideWorldBounds(true);
+        ghost.setBounce(0.2);
+
+        this.anims.create({
+            key: 'right',
+            frames: this.anims.generateFrameNumbers('ghost', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'left',
+            frames: this.anims.generateFrameNumbers('ghost', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+        
+        this.anims.create({
+            key: 'turn',
+            frames: this.anims.generateFrameNumbers('ghost', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        cursors = this.input.keyboard.createCursorKeys();
+
+        candies = this.physics.add.group({
+            key: 'candy',
+            repeat: 11,
+            setXY: { x: 12, y: 0, stepX: 70 }
+        });
+
+        holes = this.physics.add.group();
+
+        scoreText = this.add.text(16, 16, 'Candies: 0', { fontSize: '32px', fill: '#FFF' });
+
+        this.physics.add.collider(ghost, platforms);
+        this.physics.add.collider(candies, platforms);
+        this.physics.add.collider(holes, platforms);
+        
+        this.physics.add.overlap(ghost, candies, collectCandy, null, this);
+        this.physics.add.collider(ghost, holes, hitHole, null, this);
+
+    }
+
+    function update ()
+    {
+        if(gameOver){
+            return;
+        }
+
+        if (cursors.left.isDown)
+        {
+            ghost.setVelocityX(-160);
+
+            ghost.anims.play('left', true);
+        }
+        else if (cursors.right.isDown)
+        {
+            ghost.setVelocityX(160);
+
+            ghost.anims.play('right', true);
+        }
+        else
+        {
+            ghost.setVelocityX(0);
+
+            ghost.anims.play('turn');
+        }
+
+        if (cursors.up.isDown && ghost.body.touching.down)
+        {
+            ghost.setVelocityY(-430);
+        }
+    }
+
+    function collectCandy (ghost, candy)
+    {
+        candy.disableBody(true, true);
+
+        score += 1;
+        scoreText.setText('Candies: ' + score);
+
+        if (candies.countActive(true) === 0)
+        {
+            candies.children.iterate(function (child) {
+
+                child.enableBody(true, child.x, 0, true, true);
+
+            });
+
+            var x = (ghost.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+        
+            var hole = holes.create(x, 16, 'hole');
+            hole.setBounce(1);
+            hole.setCollideWorldBounds(true);
+            hole.setVelocity(Phaser.Math.Between(-200, 200), 20);
+            hole.allowGravity = false;
+        }
+    }
+
+    function hitHole(ghost, hole){
+        this.physics.pause();
+
+        ghost.setTint(0xff0000);
+        ghost.anims.play('turn');
+        
+        gameOver = true;
+    }
+
+</script>
+
+</body>
+</html>
